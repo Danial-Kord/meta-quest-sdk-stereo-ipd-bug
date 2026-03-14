@@ -1,4 +1,5 @@
 # meta-quest-sdk-stereo-ipd-bug
+
 # Meta Quest SDK — Per-Eye Camera IPD / World Scale Bug (Reproduction)
 
 A minimal Unity project to reproduce a bug in the Meta XR SDK where **interpupillary distance (IPD) is effectively applied twice** in per-eye camera mode, causing incorrect stereo separation and distorted world scale.
@@ -35,6 +36,41 @@ This is a strong indication that for per-eye cameras, the correct design is:
 
 But doing **both** (offset transforms + internal IPD) leads to the observed distortion.
 
+## Practical Test Scene: Fusable Gun Sights
+
+To verify the bug and the fix in-headset, this repo includes a **practical test scene** where you can measure the *effective* interocular distance (IPD) that the headset is actually rendering.
+
+### What the scene does
+
+- **Two gun sights** (reticles) are shown, one per eye.
+- You can **control their horizontal separation** with the **left and right controller joysticks**:
+  - **Left joystick** → moves the left sight horizontally.
+  - **Right joystick** → moves the right sight horizontally.
+- Your task: adjust the separation until your eyes **fuse the two images into one** (stereoscopic fusion). The separation at which you can comfortably fuse them corresponds to the **effective IPD** that the VR pipeline is using for your eyes.
+- Optionally, you can also change the **distance from the eye in Z** (depth); the default placement is already suitable for testing the issue.
+
+### Observations (in-headset)
+
+**1. Per-eye mode, default SDK (bug present)**  
+- To fuse the two sights, they had to be about **12 cm** apart.  
+- That implies the *effective* interocular distance in VR is ~12 cm — roughly **double** a typical real-world IPD (~6 cm).  
+- As a result, the whole world appears **smaller**, and **movement gain does not match the real world**.
+
+**2. Non–per-eye mode (e.g. single center camera / stereo handled elsewhere)**  
+- Scale and distances look **consistent with the real world**.  
+- With the same tool, fusion is possible when the sights are about **6 cm** apart — matching real-world interocular distance.
+
+**3. Per-eye mode + Custom IPD Override (cameras at center)**  
+- Left and right cameras are overridden to **zero horizontal offset** (same position as center).  
+- Scale and distances appear **correct**; stereoscopic depth is still clearly visible.  
+- With the gun-sight tool, fusion is again possible at about **6 cm** — consistent with real-world IPD and confirming that the override fixes the effective IPD.
+
+### Interpretation
+
+- The **12 cm vs 6 cm** fusion distance shows that, in default per-eye mode, the pipeline is effectively using **twice** the intended IPD.  
+- Putting the per-eye cameras at **zero separation** (so only the internal pipeline applies IPD) restores the correct effective IPD and matches the non–per-eye and real-world behaviour.  
+- The gun-sight test therefore gives a **concrete, user-measurable** way to reproduce and validate the bug and the fix.
+
 ## Contents of This Repo
 
 - **Minimal scene** with `OVRCameraRig` configured for per-eye cameras.
@@ -44,6 +80,7 @@ But doing **both** (offset transforms + internal IPD) leads to the observed dist
     - Scale or override the IPD effect.
     - Force left/right camera positions.
     - Control or zero `Camera.stereoSeparation`.
+- **Practical test scene** with two fusable gun sights and joystick-controlled horizontal separation (and optional Z distance) to measure effective IPD in-headset.
 - Simple objects in the scene to make the scale / distance distortion visible.
 
 ## How to Reproduce
@@ -59,6 +96,7 @@ But doing **both** (offset transforms + internal IPD) leads to the observed dist
    - Observe:
      - Objects feel slightly **too small**.
      - Distances feel **shorter** than they should.
+   - Use the **gun-sight test**: adjust separation until you fuse; expect ~12 cm (double your real IPD).
 
    **Case B — Cameras forced to 0 distance (correct):**
    - Enable the provided `CustomIPDOverride` behavior that:
@@ -66,6 +104,7 @@ But doing **both** (offset transforms + internal IPD) leads to the observed dist
    - Observe:
      - World scale returns to **normal**.
      - Distances feel more **veridical** (closer to reality).
+   - Use the **gun-sight test**: fuse at ~6 cm (matches real-world IPD).
 
 6. Optionally, log internal values:
    - `OVRPlugin.ipd`
@@ -112,7 +151,7 @@ This repo is intended as a transparent, minimal reproduction to help Meta engine
 
 ## Reporting / Discussion
 
-- Meta Developer Forums thread: _[add your link here]_
+- Meta Developer Forums thread: [To Be Added]()
 - If you find issues with this repro or have additional data, please open an issue or PR.
 
 ## License
