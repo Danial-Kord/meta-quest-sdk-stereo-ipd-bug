@@ -1,54 +1,120 @@
 # meta-quest-sdk-stereo-ipd-bug
-# Meta Quest SDK — Per-Eye Camera Double IPD Bug (Reproduction)
+# Meta Quest SDK — Per-Eye Camera IPD / World Scale Bug (Reproduction)
 
-A minimal Unity project to reproduce a bug in the Meta XR SDK where **interpupillary distance (IPD) is applied twice** in per-eye camera mode, causing incorrect stereo separation and distorted world scale.
+A minimal Unity project to reproduce a bug in the Meta XR SDK where **interpupillary distance (IPD) is effectively applied twice** in per-eye camera mode, causing incorrect stereo separation and distorted world scale.
 
-## The Bug
+## The Core Finding
 
-When using `OVRCameraRig` with per-eye cameras, the SDK:
+When using `OVRCameraRig` with per-eye cameras:
 
-1. **Positions** the left and right eye anchors at ±IPD/2 from the center eye (correct).
-2. **And** sets `Camera.stereoSeparation` to IPD/2 on each eye camera.
+- If the **left and right cameras are offset horizontally** (e.g. ±IPD/2 from the center eye), the world appears **too small** and distances appear **compressed**.
+- If the **left and right cameras are moved to the same position** (0 distance between them, at the center), the world scale and distances immediately look **correct**.
 
-Unity uses `stereoSeparation` to build stereo view matrices, adding another ±IPD/2 offset. The result is **2× IPD** effective separation instead of 1× IPD.
+This still happens even when **`Camera.stereoSeparation` is set to 0**.
 
-### Consequences
+That means:
+- The distortion is **not only** coming from `stereoSeparation`.
+- There is an additional IPD-based offset applied somewhere in the stack (view matrices / native eye poses / compositor).
+- When we also offset the per-eye camera transforms, IPD is effectively applied **twice**.
 
-- Perceived world scale is roughly **half** of intended.
-- Distances appear compressed.
-- Critical for research (e.g. perception, psychophysics) and affects general comfort.
+## Intuitive Summary
 
-## Requirements
+- Some part of the rendering pipeline (likely the native eye pose / compositor) already handles IPD.
+- Per-eye camera mode **also** moves the left/right cameras apart in Unity space.
+- Together, this leads to **double IPD** → exaggerated disparity → the whole virtual world looks **about half size**, and distances feel shorter than they should.
 
-- Unity 2021.3+ (or version you used)
-- Meta XR SDK (Meta XR All-in-One or equivalent)
-- Meta Quest headset (or Link for testing)
+## Why Zero Distance Fixes It
+
+- When left and right cameras are **0 distance apart** (both at the center eye position), only the internal IPD application remains.
+- That yields the correct 1× IPD and the world appears at the correct scale again.
+
+This is a strong indication that for per-eye cameras, the correct design is:
+
+- **Either**: Keep both eye cameras at center and let the internal pipeline apply IPD.  
+- **Or**: Offset the cameras in Unity and ensure **no extra IPD** is applied in the native/view layer.
+
+But doing **both** (offset transforms + internal IPD) leads to the observed distortion.
+
+## Contents of This Repo
+
+- **Minimal scene** with `OVRCameraRig` configured for per-eye cameras.
+- A **`CustomIPDOverride` script** (under `Scripts/InterOccularDebug/`) that:
+  - Hooks into `OVRCameraRig.UpdatedAnchors`, `LateUpdate`, and `Application.onBeforeRender`.
+  - Lets you:
+    - Scale or override the IPD effect.
+    - Force left/right camera positions.
+    - Control or zero `Camera.stereoSeparation`.
+- Simple objects in the scene to make the scale / distance distortion visible.
 
 ## How to Reproduce
 
-1. Clone this repo and open the project in Unity.
-2. Ensure the Meta XR SDK is installed and the scene uses `OVRCameraRig` with per-eye cameras enabled.
-3. Enter Play mode and build/run on Quest (or use Link).
-4. Observe: world scale and distances appear too small.
-5. (Optional) Enable the included **CustomIPDOverride** component and set it to correct the separation; scale and distance should look correct.
+1. Clone this repo and open it in Unity.
+2. Install/confirm Meta XR SDK (Meta XR All-in-One or equivalent).
+3. Open the provided sample scene with `OVRCameraRig`.
+4. Build and run on a Meta Quest device (or use Link / Play mode with HMD).
+5. Compare two cases:
 
-## What This Repo Contains
+   **Case A — Default per-eye offsets (buggy):**
+   - Left and right cameras are offset horizontally.
+   - Observe:
+     - Objects feel slightly **too small**.
+     - Distances feel **shorter** than they should.
 
-- **Minimal scene** with OVRCameraRig and basic environment.
-- **CustomIPDOverride script** — workaround that forces correct IPD/stereo separation in `LateUpdate` and `onBeforeRender`.
-- **Instructions** to verify the bug (e.g. logging anchor positions and `stereoSeparation` at runtime).
+   **Case B — Cameras forced to 0 distance (correct):**
+   - Enable the provided `CustomIPDOverride` behavior that:
+     - Forces left/right cameras to have 0 horizontal separation (same position as center).
+   - Observe:
+     - World scale returns to **normal**.
+     - Distances feel more **veridical** (closer to reality).
 
-## Suggested Fix (for Meta SDK)
+6. Optionally, log internal values:
+   - `OVRPlugin.ipd`
+   - `leftEyeAnchor.localPosition`
+   - `rightEyeAnchor.localPosition`
+   - `Camera.stereoSeparation`
 
-Apply IPD via **one** mechanism only:
+   And confirm:
+   - The scale error persists even when `stereoSeparation = 0`.
+   - The scale error disappears when cameras are no longer separated in Unity space.
 
-- **Option A:** Position eye anchors at ±IPD/2 and set `Camera.stereoSeparation = 0`.
-- **Option B:** Keep anchors at center and set `stereoSeparation = IPD/2`.
+## Suggested Fix for Meta SDK
 
-Not both.
+For per-eye camera mode:
 
-## Reporting
+- Choose **one** source of IPD, not two.
 
-- **Meta Developer Forums:** [link to your forum post]
-- **Issue / discussion:** Open an issue in this repo for reproduction problems or questions.
+### Option 1 — Internal IPD Only
 
+- Keep left/right cameras at the **center** (no horizontal offset in Unity).
+- Allow the existing native/view/compositor pipeline to handle IPD.
+- `Camera.stereoSeparation` may be 0 or unused for per-eye cameras in this mode.
+
+### Option 2 — Unity Transform Only
+
+- Offset left/right anchors to ±IPD/2 in Unity.
+- Ensure **no additional IPD-based offset** is applied in:
+  - Native eye poses
+  - View matrices
+  - Compositor steps
+- Set `Camera.stereoSeparation = 0` for per-eye cameras so Unity doesn’t add its own offset on top of the transform.
+
+Currently, per-eye camera mode appears to double-count the separation: one via transforms, one via internal IPD. That’s what this repo is meant to demonstrate.
+
+## Why This Matters
+
+- For **research / experiments** (e.g. distance perception, size constancy), correct metric scale is critical.
+- For general users, incorrect stereo geometry can:
+  - Break presence.
+  - Make objects feel “toy-sized”.
+  - Contribute to discomfort.
+
+This repo is intended as a transparent, minimal reproduction to help Meta engineers and other developers see and reason about the issue.
+
+## Reporting / Discussion
+
+- Meta Developer Forums thread: _[add your link here]_
+- If you find issues with this repro or have additional data, please open an issue or PR.
+
+## License
+
+[MIT](LICENCE)
