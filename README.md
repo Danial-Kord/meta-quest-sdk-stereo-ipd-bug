@@ -117,4 +117,4 @@ This repo is intended as a transparent, minimal reproduction to help Meta engine
 
 ## License
 
-[MIT](LICENCE)
+[MIT](LICENSE)
