@@ -1,9 +1,9 @@
 /* ---------------------------
-Creation Date: 15/12/2025
-Description: Simple debug controller for adjusting L/R object positions using VR thumbsticks.
-             Objects move along a specified direction vector.
+ * Input handler only: OVR and Keyboard. No position math — delegates to InterOccularSightAdjuster.
+ * Handles: UI/sights toggle, stereo mode switch, sight movement (horizontal/depth).
 --------------------------- */
 
+using System.Reflection;
 using UnityEngine;
 
 namespace InterOccularDebug
@@ -12,36 +12,32 @@ namespace InterOccularDebug
     {
         public static InterOccularPositionController Instance { get; private set; }
 
-        [Header("Target Objects")]
-        [SerializeField] private Transform leftObject;
-        [SerializeField] private Transform rightObject;
+        [Header("References")]
+        [SerializeField] private InterOccularSightAdjuster sightAdjuster;
+        [SerializeField] private CustomIPDOverride customIPDOverride;
+        [SerializeField] private OVRCameraRig cameraRig;
 
-        [Header("Direction")]
-        [Tooltip("Direction to move objects. Positive thumbstick = move in this direction, Negative = opposite")]
-        [SerializeField] private Vector3 moveDirection = Vector3.right;
-
-        [SerializeField] private Vector3 distanceDirection = Vector3.forward;
-        
         [Header("Movement Settings")]
         [SerializeField] private float moveSpeed = 0.1f;
         [SerializeField] [Range(0f, 0.5f)] private float deadZone = 0.1f;
 
-        [Header("Initial Offsets")]
-        [SerializeField] private float initialLeftOffset = -0.1f;
-        [SerializeField] private float initialRightOffset = 0.1f;
+        [Header("Mode Switch (when UI visible)")]
+        [SerializeField] private float joystickDeadZone = 0.5f;
+        [SerializeField] private float modeSwitchCooldown = 0.6f;
 
-        [Header("Debug Keyboard")]
+        [Header("Input")]
         [SerializeField] private bool enableKeyboard = true;
 
-        private float currentLeftOffset;
-        private float currentRightOffset;
-        private Vector3 leftBasePosition;
-        private Vector3 rightBasePosition;
-        private Vector3 normalizedDirection;
+        private bool hideObjects = true;
+        private bool changeHorizontal = true;
+        private StereoTestMode currentMode = StereoTestMode.PerEyeDefaultBuggy;
+        private float modeSwitchCooldownRemaining;
 
-        public float CurrentLeftOffset => currentLeftOffset;
-        public float CurrentRightOffset => currentRightOffset;
-        public float Separation => currentRightOffset - currentLeftOffset;
+        public bool HideObjects => hideObjects;
+        public StereoTestMode CurrentMode => currentMode;
+        public float CurrentLeftOffset => sightAdjuster != null ? sightAdjuster.CurrentLeftOffset : 0f;
+        public float CurrentRightOffset => sightAdjuster != null ? sightAdjuster.CurrentRightOffset : 0f;
+        public float Separation => sightAdjuster != null ? sightAdjuster.Separation : 0f;
 
         private void Awake()
         {
@@ -50,132 +46,184 @@ namespace InterOccularDebug
 
         private void Start()
         {
-            Initialize();
-        }
+            if (sightAdjuster == null)
+                sightAdjuster = FindObjectOfType<InterOccularSightAdjuster>();
+            if (customIPDOverride == null)
+                customIPDOverride = FindObjectOfType<CustomIPDOverride>();
+            if (cameraRig == null)
+                cameraRig = FindObjectOfType<OVRCameraRig>();
 
-        public void Initialize()
-        {
-            normalizedDirection = moveDirection.normalized;
-            
-            if (leftObject != null)
-                leftBasePosition = leftObject.localPosition;
-            if (rightObject != null)
-                rightBasePosition = rightObject.localPosition;
-
-            currentLeftOffset = initialLeftOffset;
-            currentRightOffset = initialRightOffset;
-            ApplyOffsets();
+            ApplyMode(currentMode);
         }
 
         private void Update()
         {
-            HandleVRInput();
-            
+            if (sightAdjuster == null) return;
+
+            sightAdjuster.SetVisibility(!hideObjects);
+
+            // ---- OVR input ----
+            HandleOVRToggleUI();
+            if (hideObjects)
+            {
+                HandleOVRModeSwitch();
+            }
+            else
+            {
+                HandleOVRSightMovement();
+            }
+
+            // ---- Keyboard input (separate) ----
             if (enableKeyboard)
-                HandleKeyboardInput();
+            {
+                HandleKeyboardToggleUI();
+                if (hideObjects)
+                {
+                    HandleKeyboardModeSwitch();
+                }
+                else
+                {
+                    HandleKeyboardSightMovement();
+                }
+            }
         }
-        bool cahngeHorizontal = true;
 
-        private void HandleVRInput()
+        // ---------- OVR input ----------
+
+        private void HandleOVRToggleUI()
         {
-            // Left thumbstick controls left object
+            if (OVRInput.GetDown(OVRInput.Button.One))
+                hideObjects = !hideObjects;
+        }
+
+        private void HandleOVRModeSwitch()
+        {
+            if (modeSwitchCooldownRemaining > 0f)
+                modeSwitchCooldownRemaining -= Time.deltaTime;
+
+            float rStickY = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.LTouch).y;
+            float lStickY = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.RTouch).y;
+            float stickY = (Mathf.Abs(rStickY) > Mathf.Abs(lStickY)) ? rStickY : lStickY;
+            if (modeSwitchCooldownRemaining <= 0f)
+            {
+                if (stickY > joystickDeadZone)
+                {
+                    SetMode(GetNextMode(-1));
+                    modeSwitchCooldownRemaining = modeSwitchCooldown;
+                }
+                else if (stickY < -joystickDeadZone)
+                {
+                    SetMode(GetNextMode(+1));
+                    modeSwitchCooldownRemaining = modeSwitchCooldown;
+                }
+            }
+        }
+
+        private void HandleOVRSightMovement()
+        {
+            if (sightAdjuster == null) return;
+
             Vector2 leftStick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.LTouch);
-            if (Mathf.Abs(leftStick.x) > deadZone && cahngeHorizontal)
-            {
-                currentLeftOffset += leftStick.x * moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-            if (Mathf.Abs(leftStick.y) > deadZone && !cahngeHorizontal)
-            {
-                leftBasePosition += distanceDirection.normalized * leftStick.y * moveSpeed * Time.deltaTime;
-                rightBasePosition += distanceDirection.normalized * leftStick.y * moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-            
-            // Right thumbstick controls right object
             Vector2 rightStick = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, OVRInput.Controller.RTouch);
-            if (Mathf.Abs(rightStick.x) > deadZone && cahngeHorizontal)
-            {
-                currentRightOffset += rightStick.x * moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-            
-            if (Mathf.Abs(rightStick.y) > deadZone && !cahngeHorizontal)
-            {
-                leftBasePosition += distanceDirection.normalized * rightStick.y * moveSpeed * Time.deltaTime;
-                rightBasePosition += distanceDirection.normalized * rightStick.y * moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-            
 
-            // Reset on A or X button
-            if (OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.LTouch) ||
-                OVRInput.GetDown(OVRInput.Button.One, OVRInput.Controller.RTouch))
+            if (changeHorizontal)
             {
-                cahngeHorizontal = !cahngeHorizontal;
+                if (Mathf.Abs(leftStick.x) > deadZone)
+                    sightAdjuster.MoveLeft(leftStick.x * moveSpeed * Time.deltaTime);
+                if (Mathf.Abs(rightStick.x) > deadZone)
+                    sightAdjuster.MoveRight(rightStick.x * moveSpeed * Time.deltaTime);
+            }
+            else
+            {
+                float depth = (Mathf.Abs(leftStick.y) > deadZone ? leftStick.y : 0f) + (Mathf.Abs(rightStick.y) > deadZone ? rightStick.y : 0f);
+                if (Mathf.Abs(depth) > deadZone)
+                    sightAdjuster.MoveDepth(depth * moveSpeed * Time.deltaTime);
+            }
+
+            if (OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.LTouch) ||
+                OVRInput.GetDown(OVRInput.Button.Two, OVRInput.Controller.RTouch))
+            {
+                changeHorizontal = !changeHorizontal;
             }
         }
 
-        private void HandleKeyboardInput()
+        // ---------- Keyboard input ----------
+
+        private void HandleKeyboardToggleUI()
         {
-            // Left object: A/D
-            if (Input.GetKey(KeyCode.A))
-            {
-                currentLeftOffset -= moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-            if (Input.GetKey(KeyCode.D))
-            {
-                currentLeftOffset += moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-
-            // Right object: Arrow keys
-            if (Input.GetKey(KeyCode.LeftArrow))
-            {
-                currentRightOffset -= moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-            if (Input.GetKey(KeyCode.RightArrow))
-            {
-                currentRightOffset += moveSpeed * Time.deltaTime;
-                ApplyOffsets();
-            }
-
-            // Reset: R
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                ResetPositions();
-            }
+            if (Input.GetKeyDown(KeyCode.Tab))
+                hideObjects = !hideObjects;
         }
 
-        private void ApplyOffsets()
+        private void HandleKeyboardModeSwitch()
         {
-            if (leftObject != null)
-                leftObject.localPosition = leftBasePosition + normalizedDirection * currentLeftOffset;
-
-            if (rightObject != null)
-                rightObject.localPosition = rightBasePosition + normalizedDirection * currentRightOffset;
+            if (Input.GetKeyDown(KeyCode.Alpha1)) SetMode(StereoTestMode.PerEyeDefaultBuggy);
+            if (Input.GetKeyDown(KeyCode.Alpha2)) SetMode(StereoTestMode.NonPerEye);
+            if (Input.GetKeyDown(KeyCode.Alpha3)) SetMode(StereoTestMode.PerEyeWithOverride);
         }
 
-        public void ResetPositions()
+        private void HandleKeyboardSightMovement()
         {
-            currentLeftOffset = initialLeftOffset;
-            currentRightOffset = initialRightOffset;
-            ApplyOffsets();
+            if (sightAdjuster == null) return;
+
+            float dt = moveSpeed * Time.deltaTime;
+            if (Input.GetKey(KeyCode.A)) sightAdjuster.MoveLeft(-dt);
+            if (Input.GetKey(KeyCode.D)) sightAdjuster.MoveLeft(dt);
+            if (Input.GetKey(KeyCode.LeftArrow)) sightAdjuster.MoveRight(-dt);
+            if (Input.GetKey(KeyCode.RightArrow)) sightAdjuster.MoveRight(dt);
+            if (Input.GetKeyDown(KeyCode.R)) sightAdjuster.ResetPositions();
+            if (Input.GetKeyDown(KeyCode.H)) changeHorizontal = !changeHorizontal;
         }
 
-        public void SetTargets(Transform left, Transform right)
+        // ---------- Mode ----------
+
+        private StereoTestMode GetNextMode(int step)
         {
-            leftObject = left;
-            rightObject = right;
-            Initialize();
+            int next = (int)currentMode + step;
+            if (next > 2) next = 0;
+            if (next < 0) next = 2;
+            return (StereoTestMode)next;
         }
 
-        public void SetDirection(Vector3 direction)
+        public void SetMode(StereoTestMode mode)
         {
-            moveDirection = direction;
-            normalizedDirection = direction.normalized;
+            currentMode = mode;
+            ApplyMode(currentMode);
         }
+
+        private void ApplyMode(StereoTestMode mode)
+        {
+            if (customIPDOverride == null) return;
+
+            switch (mode)
+            {
+                case StereoTestMode.PerEyeDefaultBuggy:
+                    customIPDOverride.OverrideEnabled = false;
+                    SetPerEyeCamerasEnabled(true);
+                    break;
+                case StereoTestMode.NonPerEye:
+                    customIPDOverride.OverrideEnabled = false;
+                    SetPerEyeCamerasEnabled(false);
+                    break;
+                case StereoTestMode.PerEyeWithOverride:
+                    customIPDOverride.OverrideEnabled = true;
+                    customIPDOverride.IpdProportion = 0f;
+                    SetPerEyeCamerasEnabled(true);
+                    break;
+            }
+        }
+
+        private void SetPerEyeCamerasEnabled(bool usePerEye)
+        {
+            if (cameraRig == null) return;
+            cameraRig.usePerEyeCameras = usePerEye;
+        }
+    }
+
+    public enum StereoTestMode
+    {
+        PerEyeDefaultBuggy = 0,
+        NonPerEye = 1,
+        PerEyeWithOverride = 2
     }
 }

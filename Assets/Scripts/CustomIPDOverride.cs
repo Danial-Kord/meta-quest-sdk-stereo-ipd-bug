@@ -34,32 +34,15 @@ public class CustomIPDOverride : MonoBehaviour
         set => overrideEnabled = value;
     }
 
-    public float DeviceIPD => OVRPlugin.ipd;
-
-    /// <summary>
-    /// Current effective IOD: distance between left/right eye anchors
-    /// plus each eye camera's stereoSeparation.
-    /// </summary>
-    public float CurrentIOD
+    /// <summary>Proportion of device IPD used for half-separation. 0 = both eyes at center; 0.5 = correct single IPD.</summary>
+    public float IpdProportion
     {
-        get
-        {
-            if (cameraRig == null) return OVRPlugin.ipd;
-            
-            Transform left = cameraRig.leftEyeAnchor;
-            Transform right = cameraRig.rightEyeAnchor;
-            if (left == null || right == null) return OVRPlugin.ipd;
-            
-            float camDistance = Vector3.Distance(left.position, right.position);
-            
-            Camera leftCam = left.GetComponent<Camera>();
-            Camera rightCam = right.GetComponent<Camera>();
-            float leftSep = leftCam != null ? leftCam.stereoSeparation : 0f;
-            float rightSep = rightCam != null ? rightCam.stereoSeparation : 0f;
-            
-            return camDistance + leftSep + rightSep;
-        }
+        get => IdpCustomProportion;
+        set => IdpCustomProportion = Mathf.Clamp01(value);
     }
+
+    public float DeviceIPD => OVRPlugin.ipd;
+    
 
     void Start()
     {
