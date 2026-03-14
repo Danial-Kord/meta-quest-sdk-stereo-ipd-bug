@@ -149,6 +149,15 @@ Currently, per-eye camera mode appears to double-count the separation: one via t
 
 This repo is intended as a transparent, minimal reproduction to help Meta engineers and other developers see and reason about the issue.
 
+## Tested Environment
+
+| Item | Version / Details |
+|------|-------------------|
+| **Unity** | 6000.3.2f1 LTS |
+| **Meta XR SDK** | 85.0 |
+| **Device** | Meta Quest 3 |
+| **Connection** | Meta Horizon Link |
+
 ## Reporting / Discussion
 
 - Meta Developer Forums thread: [To Be Added]()
