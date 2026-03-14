@@ -64,6 +64,8 @@ To verify the bug and the fix in-headset, this repo includes a **practical test 
 - Left and right cameras are overridden to **zero horizontal offset** (same position as center).  
 - Scale and distances appear **correct**; stereoscopic depth is still clearly visible.  
 - With the gun-sight tool, fusion is again possible at about **6 cm** — consistent with real-world IPD and confirming that the override fixes the effective IPD.
+[Link to the tested Scnee for 3 conditions](https://drive.google.com/file/d/1_92fCyhGPXMI1owvRM1taFkhMi8fQqBY/view?usp=sharing)
+
 
 ### Interpretation
 
