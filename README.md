@@ -52,6 +52,3 @@ Not both.
 - **Meta Developer Forums:** [link to your forum post]
 - **Issue / discussion:** Open an issue in this repo for reproduction problems or questions.
 
-## License
-
-[Your choice, e.g. MIT or Unlicense]
