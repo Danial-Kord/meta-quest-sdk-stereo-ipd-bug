@@ -1,0 +1,312 @@
+fileFormatVersion: 2
+guid: c6d961f6fbf220a408076d737a13970f
+ModelImporter:
+  serializedVersion: 23
+  fileIDToRecycleName:
+    100000: _______
+    100002: _________
+    100004: //RootNode
+    100006: OilTank02
+    100008: OilTank18
+    100010: OilTank19
+    100012: OilTank27
+    100014: OilTank28
+    100016: OilTank29
+    100018: OilTank30
+    100020: OilTank31
+    100022: OilTank32
+    100024: OilTank33
+    100026: OilTank34
+    100028: OilTank35
+    100030: OilTank36
+    100032: OilTank37
+    100034: Shape17
+    100036: Shape237
+    100038: Shape242
+    100040: Shape245
+    100042: Shape247
+    100044: Shape248
+    100046: Shape249
+    100048: Shape251
+    100050: Shape252
+    100052: Shape253
+    100054: Shape254
+    100056: Shape256
+    100058: Shape257
+    100060: Shape258
+    100062: Shape259
+    100064: Shape260
+    100066: Shape261
+    100068: Shape263
+    100070: Shape264
+    100072: Shape265
+    100074: Shape269
+    100076: Shape270
+    100078: Text01
+    100080: Text03
+    100082: Text04
+    100084: Text05
+    100086: Text06
+    100088: Text07
+    100090: Text08
+    400000: _______
+    400002: _________
+    400004: //RootNode
+    400006: OilTank02
+    400008: OilTank18
+    400010: OilTank19
+    400012: OilTank27
+    400014: OilTank28
+    400016: OilTank29
+    400018: OilTank30
+    400020: OilTank31
+    400022: OilTank32
+    400024: OilTank33
+    400026: OilTank34
+    400028: OilTank35
+    400030: OilTank36
+    400032: OilTank37
+    400034: Shape17
+    400036: Shape237
+    400038: Shape242
+    400040: Shape245
+    400042: Shape247
+    400044: Shape248
+    400046: Shape249
+    400048: Shape251
+    400050: Shape252
+    400052: Shape253
+    400054: Shape254
+    400056: Shape256
+    400058: Shape257
+    400060: Shape258
+    400062: Shape259
+    400064: Shape260
+    400066: Shape261
+    400068: Shape263
+    400070: Shape264
+    400072: Shape265
+    400074: Shape269
+    400076: Shape270
+    400078: Text01
+    400080: Text03
+    400082: Text04
+    400084: Text05
+    400086: Text06
+    400088: Text07
+    400090: Text08
+    2100000: _______
+    2100002: ______
+    2100004: 'Material #639267'
+    2100006: Cro
+    2100008: ',Black_'
+    2100010: reshetka mikrow
+    2100012: 'Material #4763'
+    2100014: 'Material #4530'
+    2100016: Croco ,Black Ski
+    2100018: '#9 ______'
+    2100020: 'Material #6391'
+    2100022: 'Material #639268'
+    2100024: 'Material #6392'
+    2100026: ',Black 1'
+    2100028: ',Black 2'
+    2300000: _______
+    2300002: _________
+    2300004: OilTank02
+    2300006: OilTank18
+    2300008: OilTank19
+    2300010: OilTank27
+    2300012: OilTank28
+    2300014: OilTank29
+    2300016: OilTank30
+    2300018: OilTank31
+    2300020: OilTank32
+    2300022: OilTank33
+    2300024: OilTank34
+    2300026: OilTank35
+    2300028: OilTank36
+    2300030: OilTank37
+    2300032: Shape17
+    2300034: Shape237
+    2300036: Shape242
+    2300038: Shape245
+    2300040: Shape247
+    2300042: Shape248
+    2300044: Shape249
+    2300046: Shape251
+    2300048: Shape252
+    2300050: Shape253
+    2300052: Shape254
+    2300054: Shape256
+    2300056: Shape257
+    2300058: Shape258
+    2300060: Shape259
+    2300062: Shape260
+    2300064: Shape261
+    2300066: Shape263
+    2300068: Shape264
+    2300070: Shape265
+    2300072: Shape269
+    2300074: Shape270
+    2300076: Text01
+    2300078: Text03
+    2300080: Text04
+    2300082: Text05
+    2300084: Text06
+    2300086: Text07
+    2300088: Text08
+    3300000: _______
+    3300002: _________
+    3300004: OilTank02
+    3300006: OilTank18
+    3300008: OilTank19
+    3300010: OilTank27
+    3300012: OilTank28
+    3300014: OilTank29
+    3300016: OilTank30
+    3300018: OilTank31
+    3300020: OilTank32
+    3300022: OilTank33
+    3300024: OilTank34
+    3300026: OilTank35
+    3300028: OilTank36
+    3300030: OilTank37
+    3300032: Shape17
+    3300034: Shape237
+    3300036: Shape242
+    3300038: Shape245
+    3300040: Shape247
+    3300042: Shape248
+    3300044: Shape249
+    3300046: Shape251
+    3300048: Shape252
+    3300050: Shape253
+    3300052: Shape254
+    3300054: Shape256
+    3300056: Shape257
+    3300058: Shape258
+    3300060: Shape259
+    3300062: Shape260
+    3300064: Shape261
+    3300066: Shape263
+    3300068: Shape264
+    3300070: Shape265
+    3300072: Shape269
+    3300074: Shape270
+    3300076: Text01
+    3300078: Text03
+    3300080: Text04
+    3300082: Text05
+    3300084: Text06
+    3300086: Text07
+    3300088: Text08
+    4300000: Shape17
+    4300002: Shape269
+    4300004: Shape270
+    4300006: Shape251
+    4300008: Shape253
+    4300010: Shape261
+    4300012: OilTank02
+    4300014: Shape245
+    4300016: Shape263
+    4300018: OilTank19
+    4300020: _______
+    4300022: Shape242
+    4300024: Text03
+    4300026: Shape260
+    4300028: Text07
+    4300030: Text04
+    4300032: Text06
+    4300034: Text05
+    4300036: Text01
+    4300038: Text08
+    4300040: Shape237
+    4300042: Shape249
+    4300044: Shape248
+    4300046: Shape247
+    4300048: Shape264
+    4300050: Shape265
+    4300052: _________
+  externalObjects: {}
+  materials:
+    importMaterials: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    motionNodeName: 
+    rigImportErrors: 
+    rigImportWarnings: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 1
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    optimizeMeshForGPU: 1
+    keepQuads: 0
+    weldVertices: 1
+    preserveHierarchy: 0
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    previousCalculatedGlobalScale: 1
+    hasPreviousCalculatedGlobalScale: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+  importAnimation: 1
+  copyAvatar: 0
+  humanDescription:
+    serializedVersion: 2
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    rootMotionBoneName: 
+    rootMotionBoneRotation: {x: 0, y: 0, z: 0, w: 1}
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  animationType: 0
+  humanoidOversampling: 1
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
