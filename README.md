@@ -213,7 +213,7 @@ This repo is intended as a transparent, minimal reproduction to help Meta engine
 
 ## Reporting / Discussion
 
-- Meta Developer Forums thread: [To Be Added]()
+- Meta Developer Forums thread: [Link](https://communityforums.atmeta.com/discussions/Questions_Discussions/ovrcamerarig-per-eye-camera-mode-appears-to-double-effective-ipd-world-scale-dis/1369800)
 - If you find issues with this repro or have additional data, please open an issue or PR.
 
 ## License
