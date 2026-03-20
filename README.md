@@ -36,7 +36,18 @@ This is a strong indication that for per-eye cameras, the correct design is:
 
 But doing **both** (offset transforms + internal IPD) leads to the observed distortion.
 
-## Practical Test Scene: Fusable Gun Sights
+## Scenes Overview
+
+| Scene | Purpose |
+|-------|---------|
+| **`SampleScene`** | **Fusable gun sights** — three stereo modes (per-eye default, non–per-eye, per-eye + override). Two sights; measure effective IPD via fusion. |
+| **`HeadCenterExperiment`** | **Head-center alignment** — monocular phases with a single movable sight and a red screen-center reticle; records center-eye pose before/after head movement and shows translation/angle delta. **Per-eye modes only** (buggy vs fixed override). |
+
+Open either scene, build to Quest, and use the on-screen UI for controls.
+
+---
+
+## Practical Test Scene: Fusable Gun Sights (`SampleScene`)
 
 To verify the bug and the fix in-headset, this repo includes a **practical test scene** where you can measure the *effective* interocular distance (IPD) that the headset is actually rendering.
 
@@ -48,6 +59,7 @@ To verify the bug and the fix in-headset, this repo includes a **practical test 
   - **Right joystick** → moves the right sight horizontally.
 - Your task: adjust the separation until your eyes **fuse the two images into one** (stereoscopic fusion). The separation at which you can comfortably fuse them corresponds to the **effective IPD** that the VR pipeline is using for your eyes.
 - Optionally, you can also change the **distance from the eye in Z** (depth); the default placement is already suitable for testing the issue.
+- **Controller input** is handled by `InterOccularPositionController`; UI by `InterOccularDebugUI`. You can switch **three** stereo modes (stick up/down when the mode panel is visible): per-eye default (buggy), non–per-eye, and per-eye + `CustomIPDOverride`.
 
 ### Observations (in-headset)
 
@@ -71,23 +83,61 @@ To verify the bug and the fix in-headset, this repo includes a **practical test 
 - Putting the per-eye cameras at **zero separation** (so only the internal pipeline applies IPD) restores the correct effective IPD and matches the non–per-eye and real-world behaviour.  
 - The gun-sight test therefore gives a **concrete, user-measurable** way to reproduce and validate the bug and the fix.
 
+---
+
+## Head-Center Experiment (`HeadCenterExperiment`)
+
+A second scene runs a **monocular alignment workflow** on top of the same rig, IPD override, and gun-sight geometry (one visible sight; the second is hidden).
+
+### Goal
+
+Align a **single gun sight** with a **red reticle** placed at the optical center of each eye in turn, then compare **two saved center-eye poses** (after you move your head in the real world) to quantify how much the head had to move between left-eye alignment and right-eye alignment under each stereo configuration.
+
+### Stereo modes (this scene only)
+
+Only the **per-eye** configurations are exposed:
+
+1. **Per-Eye Default (buggy)** — SDK default per-eye camera offsets.  
+2. **Per-Eye + Override (fixed)** — `CustomIPDOverride` enabled with IPD proportion **0** (cameras at center), same idea as the fusion test’s fix.
+
+Non–per-eye camera mode is **not** selectable here; alignment phases always use **separate eye cameras** so one eye can be cleared to **solid black**.
+
+### Flow
+
+1. **Idle** — UI visible: pick mode (**stick ↑↓** or keyboard **1** / **2**). **Thumbstick click** (L or R) or **Enter** starts the run. **Tab** or **Menu (Start)** toggles UI visibility.  
+2. **Left eye only** — Right eye is black. The movable sight **snaps to the left eye’s world transform** at start (not parented). Align the sight to the **red dot** with sticks; **B/Y** toggles horizontal vs depth; **A / X** saves **pose 1** (center-eye position & rotation).  
+3. **Right eye only** — Left eye black; **sight is locked**. Move your **head** until the dot and sight align; **A / X** saves **pose 2**.  
+4. **Result** — Both eyes on; the chosen per-eye mode is applied. UI shows **pose delta**: distance (m), angle (°), and Δposition (world).
+
+**R** resets to idle. Legacy `InterOccularPositionController` / `InterOccularDebugUI` on the TestKit prefab are **disabled** in this scene; use **`HeadCenterExperimentController`** and **`HeadCenterExperimentUI`** on the camera rig instead.
+
+### Scripts (head-center)
+
+| Script | Role |
+|--------|------|
+| `Assets/Scripts/InterOccularDebug/HeadCenterExperimentController.cs` | Phases, mono camera blackouts, pose capture, mode apply (`usePerEyeCameras` always on for results in this scene), sight snap to left eye at run start, reticle parenting to active eye anchor. |
+| `Assets/Scripts/InterOccularDebug/HeadCenterExperimentUI.cs` | World-space TMP panel: phase, two modes, metrics, control legend. |
+
+Shared with `SampleScene`: `InterOccularSightAdjuster`, `CustomIPDOverride`, `OVRCameraRig`.
+
 ## Contents of This Repo
 
-- **Minimal scene** with `OVRCameraRig` configured for per-eye cameras.
-- A **`CustomIPDOverride` script** (under `Scripts/InterOccularDebug/`) that:
-  - Hooks into `OVRCameraRig.UpdatedAnchors`, `LateUpdate`, and `Application.onBeforeRender`.
-  - Lets you:
-    - Scale or override the IPD effect.
-    - Force left/right camera positions.
-    - Control or zero `Camera.stereoSeparation`.
-- **Practical test scene** with two fusable gun sights and joystick-controlled horizontal separation (and optional Z distance) to measure effective IPD in-headset.
-- Simple objects in the scene to make the scale / distance distortion visible.
+- **Scenes**
+  - `Assets/Scenes/SampleScene.unity` — fusion / dual-sight tool (three stereo modes).
+  - `Assets/Scenes/HeadCenterExperiment.unity` — head-center monocular experiment (two per-eye modes); listed in **File → Build Settings** for builds.
+- **Core**
+  - **`CustomIPDOverride`** (`Assets/Scripts/CustomIPDOverride.cs`) — hooks `OVRCameraRig.UpdatedAnchors`, `LateUpdate`, and `Application.onBeforeRender`; can force left/right eye anchors from center + IPD proportion; used to reproduce the “cameras at center” fix.
+- **Inter-ocular debug** (`Assets/Scripts/InterOccularDebug/`)
+  - `InterOccularSightAdjuster` — moves one or two sight transforms (horizontal + shared depth).
+  - `InterOccularPositionController` + `InterOccularDebugUI` — input and UI for **`SampleScene`** (A/X toggles sights/UI; stick cycling for three modes).
+  - `HeadCenterExperimentController` + `HeadCenterExperimentUI` — **`HeadCenterExperiment`** only.
+- **Prefab / kit** — TestKit with gun-sight geometry; references wired in scenes.
 
 ## How to Reproduce
 
 1. Clone this repo and open it in Unity.
 2. Install/confirm Meta XR SDK (Meta XR All-in-One or equivalent).
-3. Open the provided sample scene with `OVRCameraRig`.
+3. Open **`SampleScene`** (gun-sight fusion) or **`HeadCenterExperiment`** (head-center workflow) with `OVRCameraRig`.
 4. Build and run on a Meta Quest device (or use Link / Play mode with HMD).
 5. Compare two cases:
 

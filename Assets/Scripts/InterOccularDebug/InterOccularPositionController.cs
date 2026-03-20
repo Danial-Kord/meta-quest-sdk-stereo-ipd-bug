@@ -12,21 +12,23 @@ namespace InterOccularDebug
     {
         public static InterOccularPositionController Instance { get; private set; }
 
-        [Header("References")]
-        [SerializeField] private InterOccularSightAdjuster sightAdjuster;
+        [Header("References")] [SerializeField]
+        private InterOccularSightAdjuster sightAdjuster;
+
         [SerializeField] private CustomIPDOverride customIPDOverride;
         [SerializeField] private OVRCameraRig cameraRig;
 
-        [Header("Movement Settings")]
-        [SerializeField] private float moveSpeed = 0.1f;
+        [Header("Movement Settings")] [SerializeField]
+        private float moveSpeed = 0.1f;
+
         [SerializeField] [Range(0f, 0.5f)] private float deadZone = 0.1f;
 
-        [Header("Mode Switch (when UI visible)")]
-        [SerializeField] private float joystickDeadZone = 0.5f;
+        [Header("Mode Switch (when UI visible)")] [SerializeField]
+        private float joystickDeadZone = 0.5f;
+
         [SerializeField] private float modeSwitchCooldown = 0.6f;
 
-        [Header("Input")]
-        [SerializeField] private bool enableKeyboard = true;
+        [Header("Input")] [SerializeField] private bool enableKeyboard = true;
 
         private bool hideObjects = true;
         private bool changeHorizontal = true;
@@ -38,6 +40,7 @@ namespace InterOccularDebug
         public float CurrentLeftOffset => sightAdjuster != null ? sightAdjuster.CurrentLeftOffset : 0f;
         public float CurrentRightOffset => sightAdjuster != null ? sightAdjuster.CurrentRightOffset : 0f;
         public float Separation => sightAdjuster != null ? sightAdjuster.Separation : 0f;
+        
 
         private void Awake()
         {
@@ -56,6 +59,17 @@ namespace InterOccularDebug
             ApplyMode(currentMode);
         }
 
+        
+        public float GetCameraSeparation()
+        {
+            if (cameraRig == null) return 0f;
+            if (cameraRig.usePerEyeCameras)
+                return cameraRig.leftEyeAnchor.GetComponent<Camera>().stereoSeparation;
+            else
+                return cameraRig.centerEyeAnchor.GetComponent<Camera>().stereoSeparation;
+
+        }
+        
         private void Update()
         {
             if (sightAdjuster == null) return;
